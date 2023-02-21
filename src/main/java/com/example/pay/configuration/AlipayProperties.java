@@ -15,16 +15,12 @@ import javax.annotation.PostConstruct;
 public class AlipayProperties {
 
 	/** 支付宝gatewayUrl */
-	@Value("pay.alipay.gatewayUrl")
 	private String gatewayUrl;
 	/** 商户应用id */
-	@Value("pay.alipay.appid")
 	private String appid;
 	/** RSA私钥，用于对商户请求报文加签 */
-	@Value("pay.alipay.appPrivateKey")
 	private String appPrivateKey;
 	/** 支付宝RSA公钥，用于验签支付宝应答 */
-	@Value("pay.alipay.alipayPublicKey")
 	private String alipayPublicKey;
 	/** 签名类型 */
 	private String signType = "RSA2";
