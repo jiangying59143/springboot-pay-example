@@ -1,5 +1,6 @@
 package com.example.pay.configuration;
 
+import cn.hutool.core.codec.Base64Decoder;
 import com.github.wxpay.sdk.WXPay;
 import com.github.wxpay.sdk.WXPayConfig;
 import com.github.wxpay.sdk.WXPayConstants;
@@ -150,8 +151,7 @@ public class WXPayClient extends WXPay {
 
         String reqInfo = notifyMap.get("req_info");
         //（1）对加密串A做base64解码，得到加密串B
-        byte[] bytes = new byte[1024];
-//        bytes = new BASE64Decoder().decodeBuffer(reqInfo)
+        byte[] bytes = Base64Decoder.decode(reqInfo);
 
         //（2）对商户key做md5，得到32位小写key* ( key设置路径：微信商户平台(pay.weixin.qq.com)-->账户设置-->API安全-->密钥设置 )
         Cipher cipher = Cipher.getInstance(ALGORITHM_MODE_PADDING);
