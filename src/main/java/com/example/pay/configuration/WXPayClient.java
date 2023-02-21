@@ -5,7 +5,8 @@ import com.github.wxpay.sdk.WXPayConfig;
 import com.github.wxpay.sdk.WXPayConstants;
 import com.github.wxpay.sdk.WXPayUtil;
 import lombok.extern.slf4j.Slf4j;
-import sun.misc.BASE64Decoder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.crypto.Cipher;
 import javax.crypto.spec.SecretKeySpec;
@@ -24,9 +25,8 @@ import java.util.Map;
  * @version 1.0
  * @since 2018/6/16
  */
-@Slf4j
 public class WXPayClient extends WXPay {
-
+    private static Logger log = LoggerFactory.getLogger(WXPayClient.class);
     /** 密钥算法 */
     private static final String ALGORITHM = "AES";
     /** 加解密算法/工作模式/填充方式 */
@@ -150,7 +150,8 @@ public class WXPayClient extends WXPay {
 
         String reqInfo = notifyMap.get("req_info");
         //（1）对加密串A做base64解码，得到加密串B
-        byte[] bytes = new BASE64Decoder().decodeBuffer(reqInfo);
+        byte[] bytes = new byte[1024];
+//        bytes = new BASE64Decoder().decodeBuffer(reqInfo)
 
         //（2）对商户key做md5，得到32位小写key* ( key设置路径：微信商户平台(pay.weixin.qq.com)-->账户设置-->API安全-->密钥设置 )
         Cipher cipher = Cipher.getInstance(ALGORITHM_MODE_PADDING);

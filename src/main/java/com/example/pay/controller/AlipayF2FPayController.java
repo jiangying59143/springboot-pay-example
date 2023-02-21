@@ -1,18 +1,28 @@
 package com.example.pay.controller;
 
+import com.alibaba.fastjson.JSONObject;
 import com.alipay.api.AlipayApiException;
+import com.alipay.api.AlipayClient;
+import com.alipay.api.domain.GoodsDetail;
+import com.alipay.api.request.AlipayTradePayRequest;
+import com.alipay.api.request.AlipayTradePrecreateRequest;
+import com.alipay.api.request.AlipayTradeRefundRequest;
+import com.alipay.api.request.AlipayUserTwostageCommonUseRequest;
+import com.alipay.api.response.AlipayTradePayResponse;
 import com.alipay.api.response.AlipayTradePrecreateResponse;
-import com.alipay.demo.trade.model.GoodsDetail;
-import com.alipay.demo.trade.model.builder.AlipayTradePayRequestBuilder;
-import com.alipay.demo.trade.model.builder.AlipayTradePrecreateRequestBuilder;
-import com.alipay.demo.trade.model.builder.AlipayTradeRefundRequestBuilder;
-import com.alipay.demo.trade.model.result.AlipayF2FPayResult;
-import com.alipay.demo.trade.model.result.AlipayF2FPrecreateResult;
-import com.alipay.demo.trade.model.result.AlipayF2FRefundResult;
-import com.alipay.demo.trade.service.AlipayTradeService;
-import com.alipay.demo.trade.utils.ZxingUtils;
+import com.alipay.api.response.AlipayTradeRefundResponse;
+import com.alipay.api.response.AlipayUserTwostageCommonUseResponse;
 import com.example.pay.configuration.AlipayProperties;
+import com.example.pay.util.PayUtil;
+import com.example.pay.util.ZxingUtils;
+import com.google.zxing.BarcodeFormat;
+import com.google.zxing.EncodeHintType;
+import com.google.zxing.MultiFormatWriter;
+import com.google.zxing.common.BitMatrix;
+import com.google.zxing.qrcode.decoder.ErrorCorrectionLevel;
 import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.ResourceUtils;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -22,9 +32,7 @@ import org.springframework.web.bind.annotation.RestController;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.File;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 
 /**
  * 支付宝-当面付 控制器.
@@ -37,13 +45,13 @@ import java.util.UUID;
  * @version 1.0
  * @since 2018/6/4
  */
-@Slf4j
 @RestController
 @RequestMapping("/alipay/f2fpay")
 public class AlipayF2FPayController {
+    private static Logger log = LoggerFactory.getLogger(AlipayF2FPayController.class);
 
     @Autowired
-    private AlipayTradeService alipayTradeService;
+    private AlipayClient alipayClient;
 
     @Autowired
     private AlipayProperties aliPayProperties;
@@ -57,7 +65,7 @@ public class AlipayF2FPayController {
      * @param authCode
      */
     @PostMapping("/barCodePay")
-    public String barCodePay(String authCode){
+    public String barCodePay(String authCode) throws AlipayApiException {
         // 实际使用时需要根据商品id查询商品的基本信息并计算价格(可能还有什么优惠)，这里只是写死值来测试
 
         // (必填) 商户网站订单系统中唯一订单号，64个字符以内，只能包含字母、数字、下划线，
@@ -84,49 +92,53 @@ public class AlipayF2FPayController {
         String operatorId = "test_operator_id";
 
 
+        //// 扩展信息
+        //JSONObject extendParams = new JSONObject();
+        //extendParams.put("sys_service_provider_id", "2088511833207846");
+        //bizContent.put("extend_params", extendParams);
+
+        //// 返回参数选项
+        //JSONArray queryOptions = new JSONArray();
+        //queryOptions.add("fund_bill_list");
+        //queryOptions.add("voucher_detail_list");
+        //bizContent.put("query_options", queryOptions);
+
+        AlipayTradePayRequest alipayTradePayRequest = new AlipayTradePayRequest();
+        JSONObject bizContent = new JSONObject();
+        bizContent.put("out_trade_no", outTradeNo);
+        bizContent.put("total_amount", totalAmount);
+        bizContent.put("subject", subject);
+        bizContent.put("scene", "bar_code");
+        //支付授权码。
+        //当面付场景传买家的付款码（25~30开头的长度为16~24位的数字，实际字符串长度以开发者获取的付款码长度为准）或者刷脸标识串（fp开头的35位字符串）。
+        bizContent.put("auth_code", "28763443825664394");
+
         // 商品明细列表，需填写购买商品详细信息，
         List<GoodsDetail> goodsDetailList = new ArrayList<>();
-        GoodsDetail goods1 = GoodsDetail.newInstance("goods_id001", "全麦小面包", 1, 1);
+        //// 商品明细信息
+        GoodsDetail goods1 = new GoodsDetail();
+        goods1.setGoodsId("goods_id001");
+        goods1.setGoodsName("全麦小面包");
+        goods1.setQuantity(1L);
+        goods1.setPrice("0.01");
         goodsDetailList.add(goods1);
-        GoodsDetail goods2 = GoodsDetail.newInstance("goods_id002", "黑人牙刷", 1, 2);
+
+        GoodsDetail goods2 = new GoodsDetail();
+        goods2.setGoodsId("goods_id002");
+        goods2.setGoodsName("黑人牙刷");
+        goods2.setQuantity(1L);
+        goods2.setPrice("0.01");
         goodsDetailList.add(goods2);
-
-        // 支付超时，线下扫码交易定义为5分钟
-        String timeoutExpress = "5m";
-
-
-        AlipayTradePayRequestBuilder builder = new AlipayTradePayRequestBuilder()
-                .setOutTradeNo(outTradeNo)
-                .setSubject(subject)
-                .setBody(body)
-                .setTotalAmount(totalAmount)
-                .setAuthCode(authCode)
-                .setTotalAmount(totalAmount)
-                .setStoreId(storeId)
-                .setOperatorId(operatorId)
-                .setGoodsDetailList(goodsDetailList)
-                .setTimeoutExpress(timeoutExpress);
+        bizContent.put("goods_detail", goodsDetailList);
 
         // 当面付，面对面付，face to face pay -> face 2 face pay -> f2f pay
         // 同步返回支付结果
-        AlipayF2FPayResult f2FPayResult = alipayTradeService.tradePay(builder);
+        AlipayTradePayResponse f2FPayResult = alipayClient.execute(alipayTradePayRequest);
         // 注意：一定要处理支付的结果，因为不是每次支付都一定会成功，可能会失败
-        switch (f2FPayResult.getTradeStatus()) {
-            case SUCCESS:
-                log.info("支付宝支付成功: )");
-                break;
-
-            case FAILED:
-                log.error("支付宝支付失败!!!");
-                break;
-
-            case UNKNOWN:
-                log.error("系统异常，订单状态未知!!!");
-                break;
-
-            default:
-                log.error("不支持的交易状态，交易返回异常!!!");
-                break;
+        if (f2FPayResult.isSuccess()) {
+            log.info("支付宝支付成功: )");
+        }else{
+            log.info("调用失败: )");
         }
 
         /**
@@ -155,7 +167,7 @@ public class AlipayF2FPayController {
          *   "sign": "BNgMmA2t8fwFZNSa39kyEKgL6hV45DVOKOsdyyzTzsQnX8HEkKOzVevQEDyK083dNYewip1KK/K92BTDY2KMAsrOEqcCNxsk9NLAvK9ZQVxQzFbAFKqs5EBAEzncSWnChJcb7VMhDakUxHZFmclHg38dLJiHE2bEcF8ar9R1zj0p4V0Jr+BXO10kLtaSTc9NeaCwJZ89sPHKitNnUWRroU7t0xPHc1hWpstObwixKmAWnsFyb9eyGwPQnqNBsUVNSNWCJ7Pg3rb03Tx6J3zNsqH5f0YhWilMi09npPe33URFc6zG1HJSfhEm4Gq1zwQrPoA/anW8BbdmEUUmNo1dEw=="
          * }
          */
-        String result = f2FPayResult.getResponse().getBody();
+        String result = f2FPayResult.getBody();
 
         return result;
     }
@@ -205,65 +217,52 @@ public class AlipayF2FPayController {
 
         // 商品明细列表，需填写购买商品详细信息，
         List<GoodsDetail> goodsDetailList = new ArrayList<>();
-        GoodsDetail goods1 = GoodsDetail.newInstance("goods_id001", "全麦小面包", 1, 1);
+        //// 商品明细信息
+        GoodsDetail goods1 = new GoodsDetail();
+        goods1.setGoodsId("goods_id001");
+        goods1.setGoodsName("全麦小面包");
+        goods1.setQuantity(1L);
+        goods1.setPrice("0.01");
         goodsDetailList.add(goods1);
-        GoodsDetail goods2 = GoodsDetail.newInstance("goods_id002", "黑人牙刷", 1, 2);
+
+        GoodsDetail goods2 = new GoodsDetail();
+        goods2.setGoodsId("goods_id002");
+        goods2.setGoodsName("黑人牙刷");
+        goods2.setQuantity(1L);
+        goods2.setPrice("0.01");
         goodsDetailList.add(goods2);
 
-        // 支付超时，线下扫码交易定义为5分钟
-        String timeoutExpress = "5m";
+        AlipayTradePrecreateRequest alipayTradePrecreateRequest = new AlipayTradePrecreateRequest();
+        alipayTradePrecreateRequest.setNotifyUrl(aliPayProperties.getNotifyUrl());
+        JSONObject bizContent = new JSONObject();
+        bizContent.put("out_trade_no", "20210817010101003");
+        bizContent.put("total_amount", 0.01);
+        bizContent.put("subject", "测试商品");
+        bizContent.put("goods_detail", goodsDetailList);
 
-        AlipayTradePrecreateRequestBuilder builder =new AlipayTradePrecreateRequestBuilder()
-                .setSubject(subject)
-                .setTotalAmount(totalAmount)
-                .setOutTradeNo(outTradeNo)
-                .setUndiscountableAmount(undiscountableAmount)
-                .setSellerId(sellerId)
-                .setBody(body)
-                .setOperatorId(operatorId)
-                .setStoreId(storeId)
-                .setTimeoutExpress(timeoutExpress)
-                //支付宝服务器主动通知商户服务器里指定的页面http路径,根据需要设置
-                .setNotifyUrl(aliPayProperties.getNotifyUrl())
-                .setGoodsDetailList(goodsDetailList);
-
-        AlipayF2FPrecreateResult result = alipayTradeService.tradePrecreate(builder);
+        AlipayTradePrecreateResponse alipayTradePrecreateResponse = alipayClient.execute(alipayTradePrecreateRequest);
         String qrCodeUrl = null;
-        switch (result.getTradeStatus()) {
-            case SUCCESS:
-                log.info("支付宝预下单成功: )");
+            if(alipayTradePrecreateResponse.isSuccess()){
+            log.info("支付宝预下单成功: )");
 
-                AlipayTradePrecreateResponse res = result.getResponse();
-                File file = ResourceUtils.getFile(ResourceUtils.CLASSPATH_URL_PREFIX + "images/");
-                if (!file.exists()) {
-                    file.mkdirs();
-                }
-                String absolutePath = file.getAbsolutePath();
-                String fileName = String.format("%sqr-%s.png", File.separator, res.getOutTradeNo());
-                String filePath = new StringBuilder(absolutePath).append(fileName).toString();
+            File file = ResourceUtils.getFile(ResourceUtils.CLASSPATH_URL_PREFIX + "images/");
+            if (!file.exists()) {
+                file.mkdirs();
+            }
+            String absolutePath = file.getAbsolutePath();
+            String fileName = String.format("%sqr-%s.png", File.separator, alipayTradePrecreateResponse.getOutTradeNo());
+            String filePath = new StringBuilder(absolutePath).append(fileName).toString();
 
-                // 这里只是演示将图片写到服务器中，实际可以返回二维码让前端去生成
-                String basePath = request.getScheme()+ "://"+request.getServerName()+":"+ request.getServerPort()+request.getContextPath()+"/";
-                qrCodeUrl = basePath + fileName;
-                response.getWriter().write("<img src=\"" + qrCodeUrl + "\" />");
-                ZxingUtils.getQRCodeImge(res.getQrCode(), 256, filePath);
-                break;
-
-            case FAILED:
-                log.error("支付宝预下单失败!!!");
-                break;
-
-            case UNKNOWN:
-                log.error("系统异常，预下单状态未知!!!");
-                break;
-
-            default:
-                log.error("不支持的交易状态，交易返回异常!!!");
-                break;
+            // 这里只是演示将图片写到服务器中，实际可以返回二维码让前端去生成
+            String basePath = request.getScheme() + "://" + request.getServerName() + ":" + request.getServerPort() + request.getContextPath() + "/";
+            qrCodeUrl = basePath + fileName;
+            response.getWriter().write("<img src=\"" + qrCodeUrl + "\" />");
+            ZxingUtils.getQRCodeImge(alipayTradePrecreateResponse.getQrCode(), 256, filePath);
+        }else{
+            log.error("支付宝预下单失败!!!");
         }
+
     }
-
-
 
     /**
      * 退款
@@ -271,32 +270,20 @@ public class AlipayF2FPayController {
      * @return
      */
     @PostMapping("/refund")
-    public String refund(String orderNo){
-        AlipayTradeRefundRequestBuilder builder = new AlipayTradeRefundRequestBuilder()
-                .setOutTradeNo(orderNo)
-                .setRefundAmount("0.01")
-                .setRefundReason("当面付退款测试")
-                .setOutRequestNo(String.valueOf(System.nanoTime()))
-                .setStoreId("A1");
-        AlipayF2FRefundResult result = alipayTradeService.tradeRefund(builder);
-        switch (result.getTradeStatus()) {
-            case SUCCESS:
-                log.info("支付宝退款成功: )");
-                break;
+    public String refund(String orderNo) throws AlipayApiException {
+        AlipayTradeRefundRequest request = new AlipayTradeRefundRequest();
+        JSONObject bizContent = new JSONObject();
+        bizContent.put("trade_no", orderNo);
+        bizContent.put("refund_amount", 0.01);
+        bizContent.put("out_request_no", "HZ01RF001");
 
-            case FAILED:
-                log.error("支付宝退款失败!!!");
-                break;
-
-            case UNKNOWN:
-                log.error("系统异常，订单退款状态未知!!!");
-                break;
-
-            default:
-                log.error("不支持的交易状态，交易返回异常!!!");
-                break;
+        request.setBizContent(bizContent.toString());
+        AlipayTradeRefundResponse response = alipayClient.execute(request);
+        if(response.isSuccess()){
+            log.info("支付宝退款成功: )");
+        } else {
+            log.error("支付宝退款失败!!!");
         }
-
-        return result.getResponse().getBody();
+        return response.getBody();
     }
 }

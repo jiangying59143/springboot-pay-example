@@ -2,6 +2,8 @@ package com.example.pay.controller;
 
 import com.example.pay.configuration.WXPayClient;
 import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -19,10 +21,10 @@ import java.util.Map;
  * @version 1.0
  * @since 2018/6/18
  */
-@Slf4j
 @RestController
 @RequestMapping("/wxpay/microPay")
 public class WXPayMicroPayController {
+    private static Logger log = LoggerFactory.getLogger(WXPayMicroPayController.class);
 
     @Autowired
     private WXPayClient wxPayClient;

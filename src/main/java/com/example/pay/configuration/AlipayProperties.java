@@ -1,8 +1,7 @@
 package com.example.pay.configuration;
 
-import lombok.Data;
-import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang.StringUtils;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 import javax.annotation.PostConstruct;
@@ -12,18 +11,20 @@ import javax.annotation.PostConstruct;
  *
  * @author mengday zhang
  */
-@Data
-@Slf4j
-@ConfigurationProperties(prefix = "pay.alipay")
+@ConfigurationProperties("pay.alipay")
 public class AlipayProperties {
 
 	/** 支付宝gatewayUrl */
+	@Value("pay.alipay.gatewayUrl")
 	private String gatewayUrl;
 	/** 商户应用id */
+	@Value("pay.alipay.appid")
 	private String appid;
 	/** RSA私钥，用于对商户请求报文加签 */
+	@Value("pay.alipay.appPrivateKey")
 	private String appPrivateKey;
 	/** 支付宝RSA公钥，用于验签支付宝应答 */
+	@Value("pay.alipay.alipayPublicKey")
 	private String alipayPublicKey;
 	/** 签名类型 */
 	private String signType = "RSA2";
@@ -55,7 +56,7 @@ public class AlipayProperties {
 	 */
 	@PostConstruct
 	public void init() {
-		log.info(description());
+		System.out.println(description());
 	}
 
 	public String description() {
@@ -81,5 +82,109 @@ public class AlipayProperties {
 					.append(key.substring(key.length() - showLength)).toString();
 		}
 		return null;
+	}
+
+	public String getGatewayUrl() {
+		return gatewayUrl;
+	}
+
+	public void setGatewayUrl(String gatewayUrl) {
+		this.gatewayUrl = gatewayUrl;
+	}
+
+	public String getAppid() {
+		return appid;
+	}
+
+	public void setAppid(String appid) {
+		this.appid = appid;
+	}
+
+	public String getAppPrivateKey() {
+		return appPrivateKey;
+	}
+
+	public void setAppPrivateKey(String appPrivateKey) {
+		this.appPrivateKey = appPrivateKey;
+	}
+
+	public String getAlipayPublicKey() {
+		return alipayPublicKey;
+	}
+
+	public void setAlipayPublicKey(String alipayPublicKey) {
+		this.alipayPublicKey = alipayPublicKey;
+	}
+
+	public String getSignType() {
+		return signType;
+	}
+
+	public void setSignType(String signType) {
+		this.signType = signType;
+	}
+
+	public String getFormate() {
+		return formate;
+	}
+
+	public void setFormate(String formate) {
+		this.formate = formate;
+	}
+
+	public String getCharset() {
+		return charset;
+	}
+
+	public void setCharset(String charset) {
+		this.charset = charset;
+	}
+
+	public String getReturnUrl() {
+		return returnUrl;
+	}
+
+	public void setReturnUrl(String returnUrl) {
+		this.returnUrl = returnUrl;
+	}
+
+	public String getNotifyUrl() {
+		return notifyUrl;
+	}
+
+	public void setNotifyUrl(String notifyUrl) {
+		this.notifyUrl = notifyUrl;
+	}
+
+	public static int getMaxQueryRetry() {
+		return maxQueryRetry;
+	}
+
+	public static void setMaxQueryRetry(int maxQueryRetry) {
+		AlipayProperties.maxQueryRetry = maxQueryRetry;
+	}
+
+	public static long getQueryDuration() {
+		return queryDuration;
+	}
+
+	public static void setQueryDuration(long queryDuration) {
+		AlipayProperties.queryDuration = queryDuration;
+	}
+
+	public static int getMaxCancelRetry() {
+		return maxCancelRetry;
+	}
+
+	public static void setMaxCancelRetry(int maxCancelRetry) {
+		AlipayProperties.maxCancelRetry = maxCancelRetry;
+	}
+
+	public static long getCancelDuration() {
+		return cancelDuration;
+	}
+
+	public static void setCancelDuration(long cancelDuration) {
+		AlipayProperties.cancelDuration = cancelDuration;
 	}
 }

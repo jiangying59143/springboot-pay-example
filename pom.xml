@@ -32,6 +32,12 @@
 
         <dependency>
             <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-configuration-processor</artifactId>
+            <optional>true</optional>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
             <scope>test</scope>
         </dependency>
@@ -42,14 +48,9 @@
         </dependency>
         <!-- alipay begin -->
         <dependency>
-            <groupId>com.alipay</groupId>
+            <groupId>com.alipay.sdk</groupId>
             <artifactId>alipay-sdk-java</artifactId>
-            <version>20170725114550</version>
-        </dependency>
-        <dependency>
-            <groupId>com.alipay</groupId>
-            <artifactId>alipay-trade-sdk</artifactId>
-            <version>20161215</version>
+            <version>4.35.45.ALL</version>
         </dependency>
         <dependency>
             <groupId>com.google.code.gson</groupId>
@@ -81,6 +82,11 @@
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>cn.hutool</groupId>
+            <artifactId>hutool-all</artifactId>
+            <version>5.8.10</version>
         </dependency>
     </dependencies>
 

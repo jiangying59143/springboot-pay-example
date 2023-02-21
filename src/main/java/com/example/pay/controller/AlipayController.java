@@ -1,18 +1,14 @@
 package com.example.pay.controller;
 
+import com.alibaba.fastjson.JSONObject;
 import com.alipay.api.AlipayApiException;
 import com.alipay.api.AlipayClient;
 import com.alipay.api.domain.*;
 import com.alipay.api.internal.util.AlipaySignature;
-import com.alipay.api.request.AlipayDataDataserviceBillDownloadurlQueryRequest;
-import com.alipay.api.request.AlipayTradeCloseRequest;
-import com.alipay.api.request.AlipayTradeFastpayRefundQueryRequest;
-import com.alipay.api.request.AlipayTradeRefundRequest;
+import com.alipay.api.request.*;
 import com.alipay.api.response.*;
-import com.alipay.demo.trade.model.builder.AlipayTradeQueryRequestBuilder;
-import com.alipay.demo.trade.model.result.AlipayF2FQueryResult;
-import com.alipay.demo.trade.service.AlipayTradeService;
 import com.example.pay.configuration.AlipayProperties;
+import com.example.pay.configuration.WXPayClient;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.http.HttpEntity;
 import org.apache.http.client.config.RequestConfig;
@@ -21,6 +17,8 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -44,19 +42,16 @@ import java.util.zip.ZipInputStream;
  * @version 1.0
  * @since 2018/6/13
  */
-@Slf4j
 @RestController
 @RequestMapping("/alipay")
 public class AlipayController {
+    private static Logger log = LoggerFactory.getLogger(AlipayController.class);
 
     @Autowired
     private AlipayProperties aliPayProperties;
 
     @Autowired
     private AlipayClient alipayClient;
-
-    @Autowired
-    private AlipayTradeService alipayTradeService;
 
     /**
      * 支付异步通知
@@ -132,33 +127,23 @@ public class AlipayController {
      * @return
      */
     @GetMapping("/query")
-    public String query(String orderNo){
-
-        AlipayTradeQueryRequestBuilder builder = new AlipayTradeQueryRequestBuilder()
-                .setOutTradeNo(orderNo);
-        AlipayF2FQueryResult result = alipayTradeService.queryTradeResult(builder);
-        switch (result.getTradeStatus()) {
-            case SUCCESS:
-                log.info("查询返回该订单支付成功: )");
-
-                AlipayTradeQueryResponse resp = result.getResponse();
-                log.info(resp.getTradeStatus());
-//                log.info(resp.getFundBillList());
-                break;
-
-            case FAILED:
-                log.error("查询返回该订单支付失败!!!");
-                break;
-
-            case UNKNOWN:
-                log.error("系统异常，订单支付状态未知!!!");
-                break;
-
-            default:
-                log.error("不支持的交易状态，交易返回异常!!!");
-                break;
+    public String query(String orderNo) throws AlipayApiException {
+        AlipayTradeQueryRequest request = new AlipayTradeQueryRequest();
+        request.setBizContent("{" +
+                "  \"out_trade_no\":" + orderNo +"," +
+                "  \"trade_no\":\"2014112611001004680 073956707\"," +
+                "  \"query_options\":[" +
+                "    \"trade_settle_info\"" +
+                "  ]" +
+                "}");
+        AlipayTradeQueryResponse response = alipayClient.execute(request);
+        if(response.isSuccess()){
+            log.info("查询返回该订单支付成功: )");
+            log.info(response.getTradeStatus());
+        } else {
+            log.error("查询返回该订单支付失败!!!");
         }
-        return result.getResponse().getBody();
+        return response.getBody();
     }
 
     /**
